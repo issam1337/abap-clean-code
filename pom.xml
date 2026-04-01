@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.cleanabap</groupId>
+    <artifactId>com.cleanabap.parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>ABAP Clean Code Tool - Parent</name>
+    <description>
+        Eclipse ADT plugin for automated ABAP clean code enforcement.
+        Based on SAP Clean ABAP Styleguide.
+    </description>
+
+    <properties>
+        <tycho.version>4.0.4</tycho.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>17</java.version>
+    </properties>
+
+    <modules>
+        <module>com.cleanabap.core</module>
+        <module>com.cleanabap.plugin</module>
+        <module>com.cleanabap.test</module>
+        <module>releng/com.cleanabap.feature</module>
+        <module>releng/com.cleanabap.updatesite</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-maven-plugin</artifactId>
+                <version>${tycho.version}</version>
+                <extensions>true</extensions>
+            </plugin>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>target-platform-configuration</artifactId>
+                <version>${tycho.version}</version>
+                <configuration>
+                    <environments>
+                        <environment>
+                            <os>win32</os><ws>win32</ws><arch>x86_64</arch>
+                        </environment>
+                        <environment>
+                            <os>linux</os><ws>gtk</ws><arch>x86_64</arch>
+                        </environment>
+                        <environment>
+                            <os>macosx</os><ws>cocoa</ws><arch>x86_64</arch>
+                        </environment>
+                    </environments>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>eclipse-2024-03</id>
+            <layout>p2</layout>
+            <url>https://download.eclipse.org/releases/2024-03</url>
+        </repository>
+    </repositories>
+</project>
