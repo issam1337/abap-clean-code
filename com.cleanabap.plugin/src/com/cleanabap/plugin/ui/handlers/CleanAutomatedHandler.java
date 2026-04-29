@@ -28,14 +28,14 @@ public class CleanAutomatedHandler extends AbstractHandler {
 
     @Override
     public Object execute(ExecutionEvent event) throws ExecutionException {
-        // Get the active editor
-        IEditorPart editor = HandlerUtil.getActiveEditor(event);
-        if (!(editor instanceof ITextEditor)) {
-            showError("No active ABAP editor found.");
+        // Resolve the active text editor (unwraps ADT's multi-page editor).
+        ITextEditor textEditor = CleanupHandlerUtil.getActiveTextEditor(event);
+        if (textEditor == null) {
+            showError("No active ABAP editor found.\n\n"
+                + "Make sure an ABAP source file is open and focused.");
             return null;
         }
 
-        ITextEditor textEditor = (ITextEditor) editor;
         IDocument document = textEditor.getDocumentProvider()
             .getDocument(textEditor.getEditorInput());
         if (document == null) {

@@ -10,6 +10,7 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
@@ -18,13 +19,62 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public class CleanupHandlerUtil {
 
     /**
+     * Returns the active text editor for the given execution event,
+     * unwrapping multi-page editors used by ADT.
+     *
+     * <p>ADT's ABAP source editor is a {@link MultiPageEditorPart};
+     * {@link HandlerUtil#getActiveEditor} returns the outer container, not
+     * the inner text page. We try several strategies:</p>
+     * <ol>
+     *   <li>If the active editor is already an {@link ITextEditor}, return it.</li>
+     *   <li>Try {@code getAdapter(ITextEditor.class)} — most ADT editors support this.</li>
+     *   <li>If it's a {@code MultiPageEditorPart}, fetch the currently selected
+     *       page and re-apply the same checks.</li>
+     * </ol>
+     *
+     * @return the wrapped {@link ITextEditor}, or {@code null} if none can be found
+     */
+    public static ITextEditor getActiveTextEditor(ExecutionEvent event) {
+        IEditorPart editor = HandlerUtil.getActiveEditor(event);
+        return resolveTextEditor(editor);
+    }
+
+    private static ITextEditor resolveTextEditor(IEditorPart editor) {
+        if (editor == null) return null;
+
+        if (editor instanceof ITextEditor te) {
+            return te;
+        }
+
+        // Most ADT editors expose ITextEditor via the adapter framework.
+        Object adapted = editor.getAdapter(ITextEditor.class);
+        if (adapted instanceof ITextEditor te) {
+            return te;
+        }
+
+        // Multi-page editor: drill into the currently selected page.
+        if (editor instanceof MultiPageEditorPart multi) {
+            try {
+                Object selected = multi.getSelectedPage();
+                if (selected instanceof IEditorPart inner) {
+                    ITextEditor te = resolveTextEditor(inner);
+                    if (te != null) return te;
+                }
+            } catch (Exception ignored) {
+                // fall through to null
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get ABAP source code from the active editor selection,
      * the full editor document, or the clipboard.
      */
     public static String getSourceFromEditorOrClipboard(ExecutionEvent event) {
-        // Try editor first
-        IEditorPart editor = HandlerUtil.getActiveEditor(event);
-        if (editor instanceof ITextEditor textEditor) {
+        ITextEditor textEditor = getActiveTextEditor(event);
+        if (textEditor != null) {
             IDocument document = textEditor.getDocumentProvider()
                 .getDocument(textEditor.getEditorInput());
 
