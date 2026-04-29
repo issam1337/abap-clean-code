@@ -1,0 +1,53 @@
+name: Build Update Site
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # allows manual run from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build with Maven (Tycho)
+        run: mvn -B -ntp clean verify
+
+      - name: Zip the P2 update site
+        run: |
+          cd releng/com.cleanabap.updatesite/target/repository
+          zip -r ../../../../abap-clean-code-updatesite.zip .
+
+      - name: Upload update site as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: abap-clean-code-updatesite
+          path: abap-clean-code-updatesite.zip
+          retention-days: 30
+
+      - name: Upload raw repository folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: abap-clean-code-repository
+          path: releng/com.cleanabap.updatesite/target/repository/
+          retention-days: 30
+
+      - name: Create GitHub Release (on tag push only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: abap-clean-code-updatesite.zip
+          generate_release_notes: true
