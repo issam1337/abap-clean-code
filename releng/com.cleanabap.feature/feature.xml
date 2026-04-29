@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.cleanabap.feature"
+      label="ABAP Clean Code Tool"
+      version="1.0.0.qualifier"
+      provider-name="CleanABAP">
+
+   <description>
+      ABAP Clean Code Tool — automated cleanup of ABAP source code
+      based on the SAP Clean ABAP Styleguide.
+
+      Features:
+      - 40+ cleanup rules covering syntax, declarations, naming, formatting
+      - Configurable profiles (Essential, Default, Full, Custom)
+      - Interactive diff view for reviewing changes
+      - Keyboard shortcuts: Ctrl+4 (auto), Ctrl+Shift+4 (interactive)
+      - Import/export profiles for team sharing
+   </description>
+
+   <copyright>
+      Copyright (c) 2024 CleanABAP contributors.
+      Licensed under the Apache License, Version 2.0.
+   </copyright>
+
+   <license url="https://www.apache.org/licenses/LICENSE-2.0">
+      Apache License, Version 2.0
+   </license>
+
+   <plugin
+         id="com.cleanabap.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.cleanabap.plugin"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

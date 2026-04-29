@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <!-- ═══════════════════════════════════════════════════════════
+        ABAP Clean Code Tool - Eclipse Plugin Extensions
+        
+        Registers commands, menus, handlers, views and keybindings
+        to integrate the cleanup engine into ADT (ABAP Development Tools).
+        ═══════════════════════════════════════════════════════════ -->
+
+   <!-- ── Commands ───────────────────────────────────────────── -->
+   <extension point="org.eclipse.ui.commands">
+
+      <!-- Automated cleanup (Ctrl+4) -->
+      <command
+            id="com.cleanabap.plugin.commands.cleanAutomated"
+            name="Clean Up with Automated ABAP Clean Code"
+            description="Apply all active cleanup rules automatically"
+            categoryId="org.eclipse.ui.category.edit">
+      </command>
+
+      <!-- Interactive cleanup (Ctrl+Shift+4) -->
+      <command
+            id="com.cleanabap.plugin.commands.cleanInteractive"
+            name="Clean Up with Interactive ABAP Clean Code..."
+            description="Open the interactive cleanup UI to review and apply changes"
+            categoryId="org.eclipse.ui.category.edit">
+      </command>
+
+      <!-- Read-only preview (Ctrl+Shift+5) -->
+      <command
+            id="com.cleanabap.plugin.commands.cleanPreview"
+            name="Show Read-Only Preview with ABAP Clean Code..."
+            description="Preview cleanup changes without modifying code"
+            categoryId="org.eclipse.ui.category.edit">
+      </command>
+
+      <!-- Configure profiles -->
+      <command
+            id="com.cleanabap.plugin.commands.configureProfiles"
+            name="Configure ABAP Clean Code Profiles..."
+            description="Open the profile and rules configuration dialog"
+            categoryId="org.eclipse.ui.category.edit">
+      </command>
+   </extension>
+
+   <!-- ── Handlers ───────────────────────────────────────────── -->
+   <extension point="org.eclipse.ui.handlers">
+      <handler
+            class="com.cleanabap.plugin.ui.handlers.CleanAutomatedHandler"
+            commandId="com.cleanabap.plugin.commands.cleanAutomated">
+         <activeWhen>
+            <with variable="activeEditorId">
+               <or>
+                  <equals value="com.sap.adt.tools.abapsource.ui.AbapEditor"/>
+                  <equals value="org.eclipse.ui.DefaultTextEditor"/>
+               </or>
+            </with>
+         </activeWhen>
+      </handler>
+      <handler
+            class="com.cleanabap.plugin.ui.handlers.CleanInteractiveHandler"
+            commandId="com.cleanabap.plugin.commands.cleanInteractive">
+         <activeWhen>
+            <with variable="activeEditorId">
+               <or>
+                  <equals value="com.sap.adt.tools.abapsource.ui.AbapEditor"/>
+                  <equals value="org.eclipse.ui.DefaultTextEditor"/>
+               </or>
+            </with>
+         </activeWhen>
+      </handler>
+      <handler
+            class="com.cleanabap.plugin.ui.handlers.CleanPreviewHandler"
+            commandId="com.cleanabap.plugin.commands.cleanPreview">
+      </handler>
+      <handler
+            class="com.cleanabap.plugin.ui.handlers.ConfigureProfilesHandler"
+            commandId="com.cleanabap.plugin.commands.configureProfiles">
+      </handler>
+   </extension>
+
+   <!-- ── Keybindings ────────────────────────────────────────── -->
+   <extension point="org.eclipse.ui.bindings">
+      <key
+            commandId="com.cleanabap.plugin.commands.cleanAutomated"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+4"
+            contextId="org.eclipse.ui.textEditorScope">
+      </key>
+      <key
+            commandId="com.cleanabap.plugin.commands.cleanInteractive"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M2+4"
+            contextId="org.eclipse.ui.textEditorScope">
+      </key>
+      <key
+            commandId="com.cleanabap.plugin.commands.cleanPreview"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M2+5"
+            contextId="org.eclipse.ui.textEditorScope">
+      </key>
+   </extension>
+
+   <!-- ── Menu Contributions ─────────────────────────────────── -->
+   <extension point="org.eclipse.ui.menus">
+
+      <!-- Add to Source Code menu (mirrors ABAP Cleaner placement) -->
+      <menuContribution
+            locationURI="menu:com.sap.adt.tools.abapsource.ui.menu.source?after=additions">
+         <separator name="com.cleanabap.separator" visible="true"/>
+         <command
+               commandId="com.cleanabap.plugin.commands.cleanAutomated"
+               icon="icons/clean_auto_16.png"
+               label="Clean Up with Automated ABAP Clean Code"
+               mnemonic="L"
+               style="push">
+         </command>
+         <command
+               commandId="com.cleanabap.plugin.commands.cleanInteractive"
+               icon="icons/clean_interactive_16.png"
+               label="Clean Up with Interactive ABAP Clean Code..."
+               mnemonic="I"
+               style="push">
+         </command>
+         <command
+               commandId="com.cleanabap.plugin.commands.cleanPreview"
+               icon="icons/clean_preview_16.png"
+               label="Show Read-Only Preview with ABAP Clean Code..."
+               mnemonic="P"
+               style="push">
+         </command>
+         <separator name="com.cleanabap.separator2" visible="true"/>
+         <command
+               commandId="com.cleanabap.plugin.commands.configureProfiles"
+               icon="icons/configure_16.png"
+               label="Configure ABAP Clean Code Profiles..."
+               mnemonic="C"
+               style="push">
+         </command>
+      </menuContribution>
+
+      <!-- Also add to editor context menu -->
+      <menuContribution
+            locationURI="popup:#AbapSourceEditorContext?after=additions">
+         <menu
+               id="com.cleanabap.plugin.menu.contextMenu"
+               label="ABAP Clean Code"
+               icon="icons/clean_auto_16.png"
+               mnemonic="K">
+            <command
+                  commandId="com.cleanabap.plugin.commands.cleanAutomated"
+                  label="Clean Up Automated"
+                  style="push">
+            </command>
+            <command
+                  commandId="com.cleanabap.plugin.commands.cleanInteractive"
+                  label="Clean Up Interactive..."
+                  style="push">
+            </command>
+         </menu>
+      </menuContribution>
+
+      <!-- Toolbar button -->
+      <menuContribution
+            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+         <toolbar
+               id="com.cleanabap.plugin.toolbar">
+            <command
+                  commandId="com.cleanabap.plugin.commands.cleanAutomated"
+                  icon="icons/clean_auto_16.png"
+                  label=""
+                  tooltip="Clean Up with ABAP Clean Code (Ctrl+4)"
+                  style="push">
+            </command>
+         </toolbar>
+      </menuContribution>
+
+   </extension>
+
+   <!-- ── Preference Page ────────────────────────────────────── -->
+   <extension point="org.eclipse.ui.preferencePages">
+      <page
+            id="com.cleanabap.plugin.preferences"
+            name="ABAP Clean Code"
+            class="com.cleanabap.plugin.ui.dialogs.CleanupPreferencePage">
+      </page>
+      <page
+            id="com.cleanabap.plugin.preferences.profiles"
+            name="Profiles &amp; Rules"
+            category="com.cleanabap.plugin.preferences"
+            class="com.cleanabap.plugin.ui.dialogs.ProfilePreferencePage">
+      </page>
+   </extension>
+
+</plugin>

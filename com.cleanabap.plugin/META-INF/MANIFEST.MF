@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: ABAP Clean Code Tool - ADT Plugin
+Bundle-SymbolicName: com.cleanabap.plugin;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.cleanabap.plugin.Activator
+Bundle-Vendor: CleanABAP
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.jface.text,
+ org.eclipse.ui.editors,
+ org.eclipse.core.resources,
+ org.eclipse.ui.workbench,
+ com.cleanabap.core;bundle-version="1.0.0",
+ com.sap.adt.tools.core;resolution:=optional,
+ com.sap.adt.tools.abapsource.ui;resolution:=optional,
+ com.sap.adt.communication;resolution:=optional,
+ com.sap.adt.project;resolution:=optional
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Export-Package: com.cleanabap.plugin.ui.handlers

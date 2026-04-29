@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: ABAP Clean Code Tool - Core Engine
+Bundle-SymbolicName: com.cleanabap.core;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.cleanabap.core.Activator
+Bundle-Vendor: CleanABAP
+Require-Bundle: org.eclipse.core.runtime
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Export-Package: com.cleanabap.core.parser,
+ com.cleanabap.core.programbase,
+ com.cleanabap.core.rulebase,
+ com.cleanabap.core.rulehelpers,
+ com.cleanabap.core.rules.alignment,
+ com.cleanabap.core.rules.commands,
+ com.cleanabap.core.rules.comments,
+ com.cleanabap.core.rules.declarations,
+ com.cleanabap.core.rules.emptylines,
+ com.cleanabap.core.rules.formatting,
+ com.cleanabap.core.rules.naming,
+ com.cleanabap.core.rules.syntax,
+ com.cleanabap.core.profiles,
+ com.cleanabap.core.config
