@@ -24,7 +24,6 @@
     <modules>
         <module>com.cleanabap.core</module>
         <module>com.cleanabap.plugin</module>
-        <module>com.cleanabap.test</module>
         <module>releng/com.cleanabap.feature</module>
         <module>releng/com.cleanabap.updatesite</module>
     </modules>
@@ -42,6 +41,7 @@
                 <artifactId>target-platform-configuration</artifactId>
                 <version>${tycho.version}</version>
                 <configuration>
+                    <executionEnvironment>JavaSE-17</executionEnvironment>
                     <environments>
                         <environment>
                             <os>win32</os><ws>win32</ws><arch>x86_64</arch>
@@ -53,6 +53,15 @@
                             <os>macosx</os><ws>cocoa</ws><arch>x86_64</arch>
                         </environment>
                     </environments>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-compiler-plugin</artifactId>
+                <version>${tycho.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
             </plugin>
         </plugins>

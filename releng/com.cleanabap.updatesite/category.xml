@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.cleanabap.feature_1.0.0.qualifier.jar"
+            id="com.cleanabap.feature"
+            version="1.0.0.qualifier">
+      <category name="com.cleanabap.category"/>
+   </feature>
+   <category-def name="com.cleanabap.category" label="ABAP Clean Code Tool">
+      <description>
+         ABAP Clean Code Tool — automated cleanup of ABAP source code
+         based on the SAP Clean ABAP Styleguide.
+      </description>
+   </category-def>
+</site>

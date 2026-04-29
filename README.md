@@ -241,10 +241,21 @@ mvn clean verify -pl releng/com.cleanabap.updatesite
 
 ### Installing in ADT
 
+**Option A: Install from a built P2 update site**
+
 1. Build the update site: `mvn clean verify`
 2. In Eclipse ADT: Help → Install New Software...
-3. Add local update site: `releng/com.cleanabap.updatesite/target/repository`
-4. Select "ABAP Clean Code Tool" and install
+3. Click **Add… → Local…** and select the absolute path:
+   `<repo>/releng/com.cleanabap.updatesite/target/repository`
+4. Select "ABAP Clean Code Tool" and install, then restart Eclipse
+
+**Option B: Run from source as an Eclipse Application (no Maven needed)**
+
+1. Open Eclipse with ADT and PDE installed
+2. **File → Import → General → Existing Projects into Workspace**
+3. Import all `com.cleanabap.*` projects from this repo
+4. Right-click `com.cleanabap.plugin` → **Run As → Eclipse Application**
+5. A second Eclipse instance launches with the plugin active
 
 ---
 
