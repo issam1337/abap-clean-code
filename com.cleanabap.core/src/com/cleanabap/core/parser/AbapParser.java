@@ -79,42 +79,69 @@ public class AbapParser {
                 continue;
             }
 
-            // Find the keyword before the colon
-            List<Token> prefix = new ArrayList<>();
-            List<Token> afterColon = new ArrayList<>();
-            boolean foundColon = false;
+            List<Token> tokens = stmt.getTokens();
 
-            for (Token t : stmt.getTokens()) {
-                if (t.isColon() && !foundColon) {
-                    foundColon = true;
-                    continue;
-                }
-                if (!foundColon) {
-                    if (t.getType() != Token.Type.WHITESPACE && t.getType() != Token.Type.NEWLINE) {
-                        prefix.add(t);
-                    }
-                } else {
-                    afterColon.add(t);
-                }
+            // Locate the chain colon.
+            int colonIdx = -1;
+            for (int i = 0; i < tokens.size(); i++) {
+                if (tokens.get(i).isColon()) { colonIdx = i; break; }
             }
-
-            if (!foundColon || prefix.isEmpty()) {
+            if (colonIdx < 0) {
                 resolved.add(stmt);
                 continue;
             }
 
-            // Split by comma
+            // Find the keyword token immediately before the colon, skipping
+            // whitespace, newlines, comments and pragmas. This is the chain
+            // keyword (DATA, TYPES, FIELD-SYMBOLS, STATICS, ...).
+            int kwIdx = -1;
+            for (int i = colonIdx - 1; i >= 0; i--) {
+                Token t = tokens.get(i);
+                if (t.getType() == Token.Type.WHITESPACE
+                        || t.getType() == Token.Type.NEWLINE
+                        || t.isComment()
+                        || t.isPragma()) {
+                    continue;
+                }
+                kwIdx = i;
+                break;
+            }
+            if (kwIdx < 0) {
+                resolved.add(stmt);
+                continue;
+            }
+
+            Token chainKeyword = tokens.get(kwIdx);
+
+            // Compute the indent of the chain-keyword line so we can repeat
+            // it on every unchained line.
+            String indent = computeIndent(tokens, kwIdx);
+
+            // Emit any tokens that appear before the chain keyword (file-level
+            // comments, blank lines, the leading indent) as their own
+            // statement so that their original formatting is preserved.
+            if (kwIdx > 0) {
+                AbapStatement leading = new AbapStatement();
+                for (int i = 0; i < kwIdx; i++) {
+                    leading.addToken(tokens.get(i));
+                }
+                if (leading.getTokenCount() > 0) {
+                    resolved.add(leading);
+                }
+            }
+
+            // Split the post-colon tokens into segments separated by commas.
             List<List<Token>> segments = new ArrayList<>();
             List<Token> currentSegment = new ArrayList<>();
-
-            for (Token t : afterColon) {
+            for (int i = colonIdx + 1; i < tokens.size(); i++) {
+                Token t = tokens.get(i);
                 if (t.isComma()) {
                     if (!currentSegment.isEmpty()) {
                         segments.add(currentSegment);
                         currentSegment = new ArrayList<>();
                     }
                 } else if (t.isPeriod()) {
-                    // final segment
+                    // The terminating period is re-emitted explicitly below.
                 } else {
                     currentSegment.add(t);
                 }
@@ -123,36 +150,74 @@ public class AbapParser {
                 segments.add(currentSegment);
             }
 
-            // Create one statement per segment
+            // Emit one statement per segment.
+            boolean isFirst = true;
             for (List<Token> segment : segments) {
                 AbapStatement newStmt = new AbapStatement();
-                // Copy prefix tokens
-                for (Token pt : prefix) {
-                    Token copy = Token.synthetic(pt.getType(), pt.getText(), pt.getLine());
-                    newStmt.addToken(copy);
+                int line = chainKeyword.getLine();
+
+                // The first segment's leading newline + indent are already
+                // present in the "leading" statement (or absent because the
+                // chain starts at file offset 0). Subsequent segments need
+                // their own newline + indent so they don't run together.
+                if (!isFirst) {
+                    newStmt.addToken(Token.synthetic(
+                            Token.Type.NEWLINE, "\n", line));
+                    if (!indent.isEmpty()) {
+                        newStmt.addToken(Token.synthetic(
+                                Token.Type.WHITESPACE, indent, line));
+                    }
                 }
-                // Add space
-                newStmt.addToken(Token.synthetic(Token.Type.WHITESPACE, " ", 
-                    prefix.get(0).getLine()));
-                // Add segment tokens (skip leading whitespace)
-                boolean started = false;
-                for (Token st : segment) {
-                    if (!started && (st.getType() == Token.Type.WHITESPACE || 
-                        st.getType() == Token.Type.NEWLINE)) continue;
-                    started = true;
-                    Token copy = Token.synthetic(st.getType(), st.getText(), st.getLine());
-                    newStmt.addToken(copy);
+
+                newStmt.addToken(Token.synthetic(
+                        chainKeyword.getType(), chainKeyword.getText(), line));
+                newStmt.addToken(Token.synthetic(
+                        Token.Type.WHITESPACE, " ", line));
+
+                // Skip leading whitespace/newlines inside the segment.
+                int segStart = 0;
+                while (segStart < segment.size()) {
+                    Token.Type tt = segment.get(segStart).getType();
+                    if (tt == Token.Type.WHITESPACE || tt == Token.Type.NEWLINE) {
+                        segStart++;
+                    } else {
+                        break;
+                    }
                 }
-                // Add period
-                newStmt.addToken(Token.synthetic(Token.Type.PERIOD, ".", 
-                    segment.isEmpty() ? prefix.get(0).getLine() : 
-                    segment.get(segment.size() - 1).getLine()));
-                
+                for (int i = segStart; i < segment.size(); i++) {
+                    Token st = segment.get(i);
+                    newStmt.addToken(Token.synthetic(
+                            st.getType(), st.getText(), st.getLine()));
+                }
+
+                newStmt.addToken(Token.synthetic(
+                        Token.Type.PERIOD, ".", line));
+
                 resolved.add(newStmt);
+                isFirst = false;
             }
         }
 
         return resolved;
+    }
+
+    /**
+     * Compute the indent (run of whitespace) preceding the token at
+     * {@code kwIdx} on the same line. Returns "" if the keyword is not
+     * preceded only by whitespace on its line.
+     */
+    private String computeIndent(List<Token> tokens, int kwIdx) {
+        StringBuilder indent = new StringBuilder();
+        for (int i = kwIdx - 1; i >= 0; i--) {
+            Token t = tokens.get(i);
+            if (t.getType() == Token.Type.NEWLINE) break;
+            if (t.getType() == Token.Type.WHITESPACE) {
+                indent.insert(0, t.getText());
+            } else {
+                return "";
+            }
+        }
+        return indent.toString();
     }
 
     // ─── Phase 3: Build Block Structure ──────────────────────────
