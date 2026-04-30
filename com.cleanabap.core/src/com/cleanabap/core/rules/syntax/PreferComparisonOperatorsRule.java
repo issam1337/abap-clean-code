@@ -77,10 +77,16 @@ public class PreferComparisonOperatorsRule extends RuleForStatements {
         }
 
         if (changed) {
-            doc.updateSource(rebuildSource(doc));
+            // Just mark the result as modified — RuleForStatements will rebuild
+            // the document source once at the end of apply() from a stable
+            // snapshot. Calling doc.updateSource here would re-parse the
+            // statement list mid-iteration and silently drop later edits.
             result.setSourceModified(true);
         }
     }
+
+    // Note: rebuildSource was removed — the base class now handles the
+    // single end-of-apply rebuild from a stable snapshot.
 
     private Token findPrevSignificant(Token token) {
         Token t = token.getPrev();
@@ -107,11 +113,4 @@ public class PreferComparisonOperatorsRule extends RuleForStatements {
                t.getType() == Token.Type.PUNCTUATION; // closing paren
     }
 
-    private String rebuildSource(CodeDocument doc) {
-        StringBuilder sb = new StringBuilder();
-        for (AbapStatement stmt : doc.getStatements()) {
-            sb.append(stmt.toSourceCode());
-        }
-        return sb.toString();
-    }
 }

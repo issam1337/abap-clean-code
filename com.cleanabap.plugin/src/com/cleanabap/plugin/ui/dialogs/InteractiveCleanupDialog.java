@@ -19,7 +19,10 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Interactive cleanup dialog — the core UI of the ABAP Clean Code Tool.
@@ -62,6 +65,17 @@ public class InteractiveCleanupDialog extends Dialog {
     // State
     private String acceptedSource;
     private int currentFindingIndex = -1;
+
+    // Diff highlight bookkeeping — tracks the lines reported as different
+    // by the most recent computeDiff() pass. Used by Next/Prev navigation
+    // and to repaint the "current change" highlight without recomputing
+    // the whole diff.
+    private List<Integer> origDiffLines = new ArrayList<>();
+    private List<Integer> cleanDiffLines = new ArrayList<>();
+    private org.eclipse.swt.graphics.Color removedBgColor;
+    private org.eclipse.swt.graphics.Color addedBgColor;
+    private org.eclipse.swt.graphics.Color currentLeftColor;
+    private org.eclipse.swt.graphics.Color currentRightColor;
 
     public InteractiveCleanupDialog(Shell parent, String originalSource,
                                      CleanupSession session,
@@ -244,43 +258,111 @@ public class InteractiveCleanupDialog extends Dialog {
     private void populatePanels() {
         leftPanel.setText(originalSource);
         rightPanel.setText(session.getCleanedSource());
+        // Clear any previous style ranges before re-highlighting (setText
+        // already does this for the StyledText itself, but keep our cached
+        // diff state in sync).
+        origDiffLines.clear();
+        cleanDiffLines.clear();
+        currentFindingIndex = -1;
+        ensureDiffColors();
         highlightDifferences();
     }
 
+    private void ensureDiffColors() {
+        Display display = getShell().getDisplay();
+        if (removedBgColor == null) {
+            removedBgColor = new Color(display, 255, 220, 220); // light red
+            addedBgColor   = new Color(display, 220, 255, 220); // light green
+            currentLeftColor  = new Color(display, 255, 170, 170); // stronger red
+            currentRightColor = new Color(display, 170, 230, 170); // stronger green
+            // Dispose colors when the dialog shell is destroyed
+            getShell().addDisposeListener(e -> {
+                if (removedBgColor != null) removedBgColor.dispose();
+                if (addedBgColor != null) addedBgColor.dispose();
+                if (currentLeftColor != null) currentLeftColor.dispose();
+                if (currentRightColor != null) currentRightColor.dispose();
+            });
+        }
+    }
+
+    /**
+     * Highlight the lines that actually differ between the original source
+     * and the cleaned source using a longest-common-subsequence (LCS) based
+     * line diff. The previous implementation compared lines pairwise by
+     * index, which (a) flagged everything below the first multi-line edit
+     * (e.g., an UNCHAIN that splits one line into three) as "different" and
+     * (b) missed real differences when the line counts diverged.
+     */
     private void highlightDifferences() {
-        // Basic line-based highlighting
-        String[] origLines = originalSource.split("\n", -1);
+        String[] origLines  = originalSource.split("\n", -1);
         String[] cleanLines = session.getCleanedSource().split("\n", -1);
 
-        Display display = getShell().getDisplay();
-        Color removedBg = new Color(display, 255, 220, 220);
-        Color addedBg = new Color(display, 220, 255, 220);
+        ensureDiffColors();
 
-        int maxLines = Math.max(origLines.length, cleanLines.length);
-        for (int i = 0; i < maxLines; i++) {
-            String orig = i < origLines.length ? origLines[i] : "";
-            String clean = i < cleanLines.length ? cleanLines[i] : "";
+        // Compute LCS-based diff
+        Set<Integer> origDiffs  = new HashSet<>();
+        Set<Integer> cleanDiffs = new HashSet<>();
+        computeLineDiff(origLines, cleanLines, origDiffs, cleanDiffs);
 
-            if (!orig.equals(clean)) {
-                if (i < origLines.length) {
-                    highlightLine(leftPanel, i, removedBg);
-                }
-                if (i < cleanLines.length) {
-                    highlightLine(rightPanel, i, addedBg);
+        origDiffLines  = new ArrayList<>(origDiffs);
+        cleanDiffLines = new ArrayList<>(cleanDiffs);
+        java.util.Collections.sort(origDiffLines);
+        java.util.Collections.sort(cleanDiffLines);
+
+        for (int i : origDiffLines) {
+            highlightLine(leftPanel, i, removedBgColor);
+        }
+        for (int i : cleanDiffLines) {
+            highlightLine(rightPanel, i, addedBgColor);
+        }
+    }
+
+    /**
+     * Standard LCS line diff. Lines whose index is in {@code origDiffs} are
+     * unique to the original (treated as "removed"); lines in {@code cleanDiffs}
+     * are unique to the cleaned source ("added"). Equal lines (the LCS itself)
+     * are skipped.
+     */
+    private void computeLineDiff(String[] a, String[] b,
+                                  Set<Integer> aDiffs, Set<Integer> bDiffs) {
+        int n = a.length, m = b.length;
+        int[][] dp = new int[n + 1][m + 1];
+        for (int i = n - 1; i >= 0; i--) {
+            for (int j = m - 1; j >= 0; j--) {
+                if (a[i].equals(b[j])) {
+                    dp[i][j] = dp[i + 1][j + 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
                 }
             }
         }
+        int i = 0, j = 0;
+        while (i < n && j < m) {
+            if (a[i].equals(b[j])) {
+                i++; j++;
+            } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+                aDiffs.add(i);
+                i++;
+            } else {
+                bDiffs.add(j);
+                j++;
+            }
+        }
+        while (i < n) { aDiffs.add(i++); }
+        while (j < m) { bDiffs.add(j++); }
     }
 
     private void highlightLine(StyledText text, int lineIndex, Color bg) {
         try {
+            if (lineIndex < 0 || lineIndex >= text.getLineCount()) return;
             int start = text.getOffsetAtLine(lineIndex);
             int length = text.getLine(lineIndex).length();
+            if (length == 0) length = 1; // give an empty line a visible band
             org.eclipse.swt.custom.StyleRange range =
                 new org.eclipse.swt.custom.StyleRange(start, length, null, bg);
             text.setStyleRange(range);
         } catch (Exception e) {
-            // Line index out of range
+            // Line index out of range — silently ignore
         }
     }
 
@@ -311,28 +393,93 @@ public class InteractiveCleanupDialog extends Dialog {
     }
 
     private void navigatePrev() {
-        List<CleanupResult.CleanupChange> changes = session.getAllChanges();
-        if (changes.isEmpty()) return;
-        currentFindingIndex = Math.max(0, currentFindingIndex - 1);
-        scrollToChange(changes.get(currentFindingIndex));
+        int count = navigationCount();
+        if (count == 0) return;
+        if (currentFindingIndex <= 0) {
+            currentFindingIndex = count - 1; // wrap to last
+        } else {
+            currentFindingIndex--;
+        }
+        scrollToCurrent();
     }
 
     private void navigateNext() {
-        List<CleanupResult.CleanupChange> changes = session.getAllChanges();
-        if (changes.isEmpty()) return;
-        currentFindingIndex = Math.min(changes.size() - 1, currentFindingIndex + 1);
-        scrollToChange(changes.get(currentFindingIndex));
+        int count = navigationCount();
+        if (count == 0) return;
+        if (currentFindingIndex < 0 || currentFindingIndex >= count - 1) {
+            currentFindingIndex = 0; // wrap to first / start at first
+        } else {
+            currentFindingIndex++;
+        }
+        scrollToCurrent();
     }
 
-    private void scrollToChange(CleanupResult.CleanupChange change) {
+    /**
+     * Number of navigable changes: prefer the actual diff lines (which are
+     * visually highlighted) over the rule-reported change list. The latter
+     * can be empty for rules that mutate source via string-replace without
+     * adding entries, while the diff is computed directly from the two
+     * source strings.
+     */
+    private int navigationCount() {
+        if (!origDiffLines.isEmpty()) return origDiffLines.size();
+        if (!cleanDiffLines.isEmpty()) return cleanDiffLines.size();
+        return session.getAllChanges().size();
+    }
+
+    private void scrollToCurrent() {
+        // Re-paint base diff highlighting first, then overlay the
+        // "current change" emphasis in a stronger color on both panels.
+        highlightDifferences();
+
+        int leftLine  = pickLine(origDiffLines, currentFindingIndex,
+                                 fallbackLineFromChanges(currentFindingIndex));
+        int rightLine = pickLine(cleanDiffLines, currentFindingIndex, leftLine);
+
+        if (leftLine >= 0) {
+            highlightLine(leftPanel, leftLine, currentLeftColor);
+            scrollPanelTo(leftPanel, leftLine);
+        }
+        if (rightLine >= 0) {
+            highlightLine(rightPanel, rightLine, currentRightColor);
+            scrollPanelTo(rightPanel, rightLine);
+        }
+
+        if (statusLabel != null && !statusLabel.isDisposed()) {
+            int total = navigationCount();
+            statusLabel.setText(String.format("%s — change %d of %d",
+                session.getSummary(),
+                Math.min(currentFindingIndex + 1, total),
+                total));
+        }
+    }
+
+    private int pickLine(List<Integer> lines, int idx, int fallback) {
+        if (lines == null || lines.isEmpty()) return fallback;
+        if (idx < 0) return lines.get(0);
+        if (idx >= lines.size()) return lines.get(lines.size() - 1);
+        return lines.get(idx);
+    }
+
+    private int fallbackLineFromChanges(int idx) {
+        List<CleanupResult.CleanupChange> changes = session.getAllChanges();
+        if (changes.isEmpty()) return -1;
+        int safeIdx = Math.max(0, Math.min(idx, changes.size() - 1));
+        return Math.max(0, changes.get(safeIdx).getLine() - 1);
+    }
+
+    private void scrollPanelTo(StyledText panel, int line) {
+        if (panel == null || panel.isDisposed()) return;
+        if (line < 0 || line >= panel.getLineCount()) return;
         try {
-            int line = Math.max(0, change.getLine() - 1);
-            if (line < leftPanel.getLineCount()) {
-                leftPanel.setTopIndex(Math.max(0, line - 3));
-            }
-            if (line < rightPanel.getLineCount()) {
-                rightPanel.setTopIndex(Math.max(0, line - 3));
-            }
+            // Center the line in the visible area when possible.
+            int linesVisible = Math.max(1,
+                panel.getClientArea().height / Math.max(1, panel.getLineHeight()));
+            int top = Math.max(0, line - linesVisible / 2);
+            panel.setTopIndex(top);
+            // Also place the caret offset at the line so screen-readers and
+            // selection-based actions work as expected.
+            panel.setCaretOffset(panel.getOffsetAtLine(line));
         } catch (Exception e) {
             // Ignore scroll errors
         }

@@ -39,6 +39,7 @@ public class ConvertStarCommentsRule extends RuleForStatements {
 
     @Override
     protected void processStatement(AbapStatement stmt, CodeDocument doc, CleanupResult result) {
+        boolean changed = false;
         for (Token token : stmt.getTokens()) {
             if (token.getType() == Token.Type.COMMENT_FULL) {
                 String text = token.getText();
@@ -48,9 +49,16 @@ public class ConvertStarCommentsRule extends RuleForStatements {
                         "Converted * comment to \" comment");
                     token.setText(newText);
                     token.setType(Token.Type.COMMENT_LINE);
-                    result.setSourceModified(true);
+                    changed = true;
                 }
             }
+        }
+        // Mark the result modified; the base class (RuleForStatements) will
+        // rebuild the document source once at the end of apply() from a stable
+        // statement-list snapshot. Calling doc.updateSource here would re-parse
+        // the statement list mid-iteration and silently drop later edits.
+        if (changed) {
+            result.setSourceModified(true);
         }
     }
 }

@@ -31,6 +31,13 @@ import java.util.stream.Collectors;
  */
 public class CleanupEngine {
 
+    /**
+     * Maximum number of cleanup passes to attempt before giving up. Most
+     * documents converge after 1–2 passes; the cap prevents an infinite
+     * loop in case two rules ever oscillate.
+     */
+    private static final int MAX_PASSES = 10;
+
     private final RuleRegistry registry;
 
     public CleanupEngine() {
@@ -69,30 +76,61 @@ public class CleanupEngine {
             .filter(r -> doc.getAbapRelease() == 0 || r.getMinAbapRelease() <= doc.getAbapRelease())
             .collect(Collectors.toList());
 
-        // Apply rules
+        // Apply rules in a fixed-point loop: keep running passes until no
+        // further changes are observed (or the safety cap MAX_PASSES is hit).
+        //
+        // Why a loop? Some transformations expose new opportunities for the
+        // *same* or *other* rules:
+        //   • UNCHAIN turns one DATA: chain into N statements, each of which
+        //     a later rule may need to rewrite.
+        //   • A rule that mutates statement n may, on rare buggy edge cases,
+        //     skip statement n+1 within a single pass; running again catches it.
+        // Without the loop, a user has to click "Clean up" repeatedly, which
+        // is exactly the symptom reported. The loop ends as soon as a pass
+        // produces no source change, so the common case stays a single pass.
         List<CleanupResult> results = new ArrayList<>();
         List<RuleID> appliedRules = new ArrayList<>();
 
-        for (Rule rule : activeRules) {
-            try {
-                // Apply config overrides from profile
-                applyConfigOverrides(rule, profile);
+        int passCount = 0;
+        boolean changedInPass;
+        do {
+            changedInPass = false;
+            String sourceBeforePass = doc.getCurrentSource();
 
-                CleanupResult result = rule.apply(doc);
-                results.add(result);
+            for (Rule rule : activeRules) {
+                try {
+                    // Apply config overrides from profile
+                    applyConfigOverrides(rule, profile);
 
-                if (result.isSourceModified()) {
-                    appliedRules.add(rule.getID());
+                    String sourceBeforeRule = doc.getCurrentSource();
+                    CleanupResult result = rule.apply(doc);
+                    results.add(result);
+
+                    boolean ruleChangedSource =
+                        result.isSourceModified()
+                            || !doc.getCurrentSource().equals(sourceBeforeRule);
+
+                    if (ruleChangedSource) {
+                        if (!appliedRules.contains(rule.getID())) {
+                            appliedRules.add(rule.getID());
+                        }
+                    }
+                } catch (Exception e) {
+                    // Rule failed — log but continue with other rules
+                    System.err.println("Rule " + rule.getID() + " failed: " + e.getMessage());
+                    CleanupResult errorResult = new CleanupResult(rule.getID());
+                    errorResult.addFinding(0, RuleSeverity.ERROR,
+                        "Rule execution failed: " + e.getMessage());
+                    results.add(errorResult);
                 }
-            } catch (Exception e) {
-                // Rule failed — log but continue with other rules
-                System.err.println("Rule " + rule.getID() + " failed: " + e.getMessage());
-                CleanupResult errorResult = new CleanupResult(rule.getID());
-                errorResult.addFinding(0, RuleSeverity.ERROR,
-                    "Rule execution failed: " + e.getMessage());
-                results.add(errorResult);
             }
-        }
+
+            // Did anything in this pass change the source?
+            if (!doc.getCurrentSource().equals(sourceBeforePass)) {
+                changedInPass = true;
+            }
+            passCount++;
+        } while (changedInPass && passCount < MAX_PASSES);
 
         long elapsed = (System.nanoTime() - startTime) / 1_000_000;
 
