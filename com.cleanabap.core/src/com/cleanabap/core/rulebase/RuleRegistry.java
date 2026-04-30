@@ -7,9 +7,19 @@ import com.cleanabap.core.rules.declarations.RemoveUnusedVariablesRule;
 import com.cleanabap.core.rules.declarations.UnchainConstantsRule;
 import com.cleanabap.core.rules.declarations.UnchainDataDeclarationsRule;
 import com.cleanabap.core.rules.declarations.UnchainTypesDeclarationsRule;
+import com.cleanabap.core.rules.syntax.PreferAbapBoolRule;
 import com.cleanabap.core.rules.syntax.PreferComparisonOperatorsRule;
+import com.cleanabap.core.rules.syntax.PreferIsNotRule;
 import com.cleanabap.core.rules.syntax.PreferNewToCreateObjectRule;
+import com.cleanabap.core.rules.syntax.PreferOptionalExportingRule;
+import com.cleanabap.core.rules.syntax.PreferStringTemplatesRule;
+import com.cleanabap.core.rules.syntax.PreferValueToClearRule;
+import com.cleanabap.core.rules.syntax.PreferXsdboolRule;
+import com.cleanabap.core.rules.syntax.ReplaceCallMethodRule;
+import com.cleanabap.core.rules.syntax.ReplaceDescribeTableRule;
+import com.cleanabap.core.rules.syntax.ReplaceMoveToRule;
 import com.cleanabap.core.rules.syntax.ReplaceObsoleteAddRule;
+import com.cleanabap.core.rules.syntax.ReplaceTranslateRule;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -76,16 +86,16 @@ public class RuleRegistry {
         register(new PreferNewToCreateObjectRule());
         register(new PreferComparisonOperatorsRule());
         register(new ReplaceObsoleteAddRule());
-        // TODO: register(new ReplaceMoveToRule());
-        // TODO: register(new ReplaceCallMethodRule());
-        // TODO: register(new ReplaceTranslateRule());
-        // TODO: register(new ReplaceDescribeTableRule());
-        // TODO: register(new PreferIsNotRule());
-        // TODO: register(new PreferAbapBoolRule());
-        // TODO: register(new PreferStringTemplatesRule());
-        // TODO: register(new PreferOptionalExportingRule());
-        // TODO: register(new PreferXsdboolRule());
-        // TODO: register(new PreferValueToClearRule());
+        register(new ReplaceMoveToRule());
+        register(new ReplaceCallMethodRule());
+        register(new ReplaceTranslateRule());
+        register(new ReplaceDescribeTableRule());
+        register(new PreferIsNotRule());
+        register(new PreferAbapBoolRule());
+        register(new PreferStringTemplatesRule());
+        register(new PreferOptionalExportingRule());
+        register(new PreferXsdboolRule());
+        register(new PreferValueToClearRule());
 
         // ── Phase 3: Commands ────────────────────────────────────
         // TODO: register(new SimplifyIfReturnRule());
