@@ -1,7 +1,12 @@
 package com.cleanabap.core.rulebase;
 
 import com.cleanabap.core.rules.comments.ConvertStarCommentsRule;
+import com.cleanabap.core.rules.declarations.PreferFinalRule;
+import com.cleanabap.core.rules.declarations.PreferInlineDataRule;
+import com.cleanabap.core.rules.declarations.RemoveUnusedVariablesRule;
+import com.cleanabap.core.rules.declarations.UnchainConstantsRule;
 import com.cleanabap.core.rules.declarations.UnchainDataDeclarationsRule;
+import com.cleanabap.core.rules.declarations.UnchainTypesDeclarationsRule;
 import com.cleanabap.core.rules.syntax.PreferComparisonOperatorsRule;
 import com.cleanabap.core.rules.syntax.PreferNewToCreateObjectRule;
 import com.cleanabap.core.rules.syntax.ReplaceObsoleteAddRule;
@@ -61,10 +66,11 @@ public class RuleRegistry {
     private void registerAllRules() {
         // ── Phase 1: Declarations ────────────────────────────────
         register(new UnchainDataDeclarationsRule());
-        // TODO: register(new UnchainTypesRule());
-        // TODO: register(new UnchainConstantsRule());
-        // TODO: register(new PreferInlineDataRule());
-        // TODO: register(new PreferFinalRule());
+        register(new UnchainTypesDeclarationsRule());
+        register(new UnchainConstantsRule());
+        register(new PreferInlineDataRule());
+        register(new PreferFinalRule());
+        register(new RemoveUnusedVariablesRule());
 
         // ── Phase 2: Syntax Modernization ────────────────────────
         register(new PreferNewToCreateObjectRule());
