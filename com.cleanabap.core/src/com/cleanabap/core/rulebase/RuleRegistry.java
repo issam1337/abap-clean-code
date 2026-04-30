@@ -1,12 +1,32 @@
 package com.cleanabap.core.rulebase;
 
+import com.cleanabap.core.rules.alignment.AlignDeclarationsRule;
+import com.cleanabap.core.rules.alignment.AlignParametersRule;
+import com.cleanabap.core.rules.commands.MaxNestingDepthRule;
+import com.cleanabap.core.rules.commands.PreferCaseToIfChainRule;
+import com.cleanabap.core.rules.commands.PreferCatchingSpecificRule;
+import com.cleanabap.core.rules.commands.PreferLineExistsRule;
+import com.cleanabap.core.rules.commands.PreferMethodSmallRule;
+import com.cleanabap.core.rules.commands.SimplifyIfReturnToCheckRule;
 import com.cleanabap.core.rules.comments.ConvertStarCommentsRule;
+import com.cleanabap.core.rules.comments.NoEndOfCommentsRule;
+import com.cleanabap.core.rules.comments.PreferPragmasRule;
+import com.cleanabap.core.rules.comments.RemoveCommentedCodeRule;
 import com.cleanabap.core.rules.declarations.PreferFinalRule;
 import com.cleanabap.core.rules.declarations.PreferInlineDataRule;
 import com.cleanabap.core.rules.declarations.RemoveUnusedVariablesRule;
 import com.cleanabap.core.rules.declarations.UnchainConstantsRule;
 import com.cleanabap.core.rules.declarations.UnchainDataDeclarationsRule;
 import com.cleanabap.core.rules.declarations.UnchainTypesDeclarationsRule;
+import com.cleanabap.core.rules.formatting.AndOrAtLineStartRule;
+import com.cleanabap.core.rules.formatting.ClosingBracketsAtLineEndRule;
+import com.cleanabap.core.rules.formatting.KeepLineLengthRule;
+import com.cleanabap.core.rules.naming.DescriptiveNamesRule;
+import com.cleanabap.core.rules.naming.NoHungarianNotationRule;
+import com.cleanabap.core.rules.spaces.EmptyLineAfterMethodRule;
+import com.cleanabap.core.rules.spaces.RemoveNeedlessSpacesRule;
+import com.cleanabap.core.rules.spaces.RemoveTrailingSpacesRule;
+import com.cleanabap.core.rules.spaces.StandardizeEmptyLinesRule;
 import com.cleanabap.core.rules.syntax.PreferAbapBoolRule;
 import com.cleanabap.core.rules.syntax.PreferComparisonOperatorsRule;
 import com.cleanabap.core.rules.syntax.PreferIsNotRule;
@@ -98,37 +118,37 @@ public class RuleRegistry {
         register(new PreferValueToClearRule());
 
         // ── Phase 3: Commands ────────────────────────────────────
-        // TODO: register(new SimplifyIfReturnRule());
-        // TODO: register(new PreferCaseToIfChainRule());
-        // TODO: register(new MaxNestingDepthRule());
-        // TODO: register(new PreferLineExistsRule());
-        // TODO: register(new PreferMethodSmallRule());
-        // TODO: register(new PreferCatchingSpecificRule());
+        register(new SimplifyIfReturnToCheckRule());
+        register(new PreferCaseToIfChainRule());
+        register(new MaxNestingDepthRule());
+        register(new PreferLineExistsRule());
+        register(new PreferMethodSmallRule());
+        register(new PreferCatchingSpecificRule());
 
         // ── Phase 4: Comments ────────────────────────────────────
         register(new ConvertStarCommentsRule());
-        // TODO: register(new RemoveCommentedCodeRule());
-        // TODO: register(new NoEndOfCommentsRule());
-        // TODO: register(new PreferPragmasRule());
+        register(new RemoveCommentedCodeRule());
+        register(new NoEndOfCommentsRule());
+        register(new PreferPragmasRule());
 
         // ── Phase 5: Empty Lines & Spaces ────────────────────────
-        // TODO: register(new RemoveTrailingSpacesRule());
-        // TODO: register(new StandardizeEmptyLinesRule());
-        // TODO: register(new EmptyLineAfterMethodRule());
-        // TODO: register(new RemoveNeedlessSpacesRule());
+        register(new RemoveTrailingSpacesRule());
+        register(new StandardizeEmptyLinesRule());
+        register(new EmptyLineAfterMethodRule());
+        register(new RemoveNeedlessSpacesRule());
 
         // ── Phase 6: Formatting ──────────────────────────────────
-        // TODO: register(new ClosingBracketsAtLineEndRule());
-        // TODO: register(new KeepLineLengthRule());
-        // TODO: register(new AndOrAtLineStartRule());
+        register(new ClosingBracketsAtLineEndRule());
+        register(new KeepLineLengthRule());
+        register(new AndOrAtLineStartRule());
 
         // ── Phase 7: Alignment ───────────────────────────────────
-        // TODO: register(new AlignParametersRule());
-        // TODO: register(new AlignDeclarationsRule());
+        register(new AlignParametersRule());
+        register(new AlignDeclarationsRule());
 
         // ── Phase 8: Naming (analysis only) ──────────────────────
-        // TODO: register(new NoHungarianNotationRule());
-        // TODO: register(new DescriptiveNamesRule());
+        register(new NoHungarianNotationRule());
+        register(new DescriptiveNamesRule());
     }
 
     private void register(Rule rule) {
